@@ -7,12 +7,10 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import AuthLayout, { inputClass, primaryButtonClass } from "./AuthLayout";
 
-// --- Helper Component: Password Input for better UX ---
-// Ensures the user can see what they're typing
 const PasswordInput = ({ name }: { name: string }) => {
   const [showPassword, setShowPassword] = useState(false);
-  const baseClasses = "mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 px-3 py-2 pr-10 focus:border-blue-500 focus:ring focus:ring-blue-200 dark:focus:ring-blue-400 focus:ring-opacity-50 outline-none transition-colors";
 
   return (
     <div className="relative">
@@ -22,12 +20,12 @@ const PasswordInput = ({ name }: { name: string }) => {
         name={name}
         required
         placeholder="••••••••"
-        className={baseClasses}
+        className={`${inputClass} pr-12`}
       />
       <button
         type="button"
         onClick={() => setShowPassword(!showPassword)}
-        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+        className="absolute inset-y-0 right-0 flex items-center pr-4 text-zinc-400 transition-colors hover:text-zinc-600 dark:hover:text-zinc-200"
         aria-label={showPassword ? "Hide password" : "Show password"}
       >
         {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -35,7 +33,12 @@ const PasswordInput = ({ name }: { name: string }) => {
     </div>
   );
 };
-// --- End Helper Component ---
+
+const GoogleIcon = () => (
+  <svg viewBox="0 0 24 24" className="mr-2 h-4 w-4" aria-hidden="true">
+    <path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.3-1.6 3.8-5.5 3.8-3.3 0-6-2.7-6-6.1s2.7-6.1 6-6.1c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.8 3.3 14.6 2.4 12 2.4 6.7 2.4 2.4 6.7 2.4 12s4.3 9.6 9.6 9.6c5.5 0 9.2-3.9 9.2-9.4 0-.6-.1-1.1-.2-1.6H12z" />
+  </svg>
+);
 
 export function SignIn() {
   const [error, setError] = useState<string | null>(null);
@@ -44,8 +47,9 @@ export function SignIn() {
   const [isLoadingGithub, setIsLoadingGithub] = useState(false);
   const router = useRouter();
 
-  // --- LOGIC REMAINS UNCHANGED ---
+  const anyLoading = isLoadingCredentials || isLoadingGoogle || isLoadingGithub;
 
+  // --- LOGIC UNCHANGED ---
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoadingCredentials(true);
@@ -70,120 +74,101 @@ export function SignIn() {
     setIsLoadingCredentials(false);
   };
 
-  const handleGoogleLogin = async() => {
+  const handleGoogleLogin = async () => {
     setIsLoadingGoogle(true);
-    await signIn("google", { callbackUrl: "/" })
-  }
+    await signIn("google", { callbackUrl: "/" });
+  };
 
-  const handleGithubLogin = async() => {
+  const handleGithubLogin = async () => {
     setIsLoadingGithub(true);
-    await signIn("github", { callbackUrl: "/" })
-  }
-
-  // --- REORDERED UI START ---
+    await signIn("github", { callbackUrl: "/" });
+  };
+  // --- END LOGIC ---
 
   return (
-    // Centered container on the screen, responsive padding
-    <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
-      <div className="w-full max-w-md bg-white dark:bg-gray-800 shadow-2xl border border-gray-200 dark:border-gray-700 rounded-xl space-y-6 p-8 sm:p-10">
-        
-        <h2 className="text-3xl font-bold text-center text-gray-900 dark:text-white">
-          Login
-        </h2>
-
-        {/* 1. CREDENTIALS FORM (MOVED UP) */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          
-          {/* Email/Identifier Field */}
-          <div>
-            <label htmlFor="credentials-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Mobile Number, Email or Username
-            </label>
-            <input
-              type="text"
-              id="credentials-email"
-              name="email"
-              required
-              placeholder="you@example.com"
-              className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 px-3 py-2 focus:border-blue-500 focus:ring focus:ring-blue-200 dark:focus:ring-blue-400 focus:ring-opacity-50 outline-none transition-colors"
-              disabled={isLoadingCredentials}
-            />
-          </div>
-
-          {/* Password Field */}
-          <div>
-            <label htmlFor="credentials-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Password
-            </label>
-            <PasswordInput name="password" />
-          </div>
-
-          {/* Error Display */}
-          {error && (
-            <p className="p-3 bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300 text-sm rounded-md text-center">
-              {error}
-            </p>
-          )}
-
-          {/* Submit Button */}
-          <Button
-            type="submit"
-            className="w-full h-10 bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800 text-white py-2 rounded-md transition-colors flex items-center justify-center gap-2"
-            disabled={isLoadingCredentials || isLoadingGoogle || isLoadingGithub}
-          >
-            {isLoadingCredentials && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            <MailOpen className="h-4 w-4" />
-            Login
-          </Button>
-        </form>
-        
-        {/* Sign Up Link (Kept here for good flow after Login button) */}
-        <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-          Don't have an account?{" "}
-          <Link href="/sign-up" className="text-blue-600 dark:text-blue-500 hover:underline font-medium">
-            Create Account
-          </Link>
+    <AuthLayout variant="signin">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">
+          Welcome back 👋
+        </h1>
+        <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+          Log in to catch up with your feed and chats.
         </p>
-
-        {/* 2. OR Separator (MOVED DOWN) */}
-        <div className="flex items-center justify-center my-4">
-          <div className="grow border-t border-gray-300 dark:border-gray-700"></div>
-          <span className="mx-3 text-gray-500 dark:text-gray-400 text-sm">OR</span>
-          <div className="grow border-t border-gray-300 dark:border-gray-700"></div>
-        </div>
-
-        {/* 3. SOCIAL LOGINS SECTION (MOVED DOWN) - Responsive Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Button
-            onClick={handleGoogleLogin}
-            variant="outline"
-            className="w-full h-10 bg-white dark:bg-gray-800 text-gray-900 hover:text-black dark:text-white border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-            disabled={isLoadingGoogle || isLoadingCredentials || isLoadingGithub}
-          >
-            {isLoadingGoogle ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <span className="mr-2 text-xl">G</span>
-            )}
-            Google
-          </Button>
-
-          <Button
-            onClick={handleGithubLogin}
-            variant="outline"
-            className="w-full h-10 bg-white dark:bg-gray-800 text-gray-900 hover:text-black dark:text-white border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-            disabled={isLoadingGithub || isLoadingCredentials || isLoadingGoogle}
-          >
-            {isLoadingGithub ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Github className="h-4 w-4 mr-2" />
-            )}
-            GitHub
-          </Button>
-        </div>
-        
       </div>
-    </div>
+
+      {/* Social first, like most modern apps */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <Button
+          onClick={handleGoogleLogin}
+          variant="outline"
+          className="h-11 rounded-xl border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800"
+          disabled={anyLoading}
+        >
+          {isLoadingGoogle ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon />}
+          Google
+        </Button>
+        <Button
+          onClick={handleGithubLogin}
+          variant="outline"
+          className="h-11 rounded-xl border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800"
+          disabled={anyLoading}
+        >
+          {isLoadingGithub ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Github className="mr-2 h-4 w-4" />}
+          GitHub
+        </Button>
+      </div>
+
+      <div className="my-6 flex items-center">
+        <div className="grow border-t border-zinc-200 dark:border-zinc-800" />
+        <span className="mx-3 text-xs uppercase tracking-wider text-zinc-400">or with email</span>
+        <div className="grow border-t border-zinc-200 dark:border-zinc-800" />
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label htmlFor="credentials-email" className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            Mobile number, email or username
+          </label>
+          <input
+            type="text"
+            id="credentials-email"
+            name="email"
+            required
+            placeholder="you@example.com"
+            className={inputClass}
+            disabled={isLoadingCredentials}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            Password
+          </label>
+          <PasswordInput name="password" />
+        </div>
+
+        {error && (
+          <p className="rounded-xl bg-red-50 p-3 text-center text-sm text-red-600 dark:bg-red-950/50 dark:text-red-300">
+            {error}
+          </p>
+        )}
+
+        <Button type="submit" className={primaryButtonClass} disabled={anyLoading}>
+          {isLoadingCredentials ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <MailOpen className="mr-2 h-4 w-4" />
+          )}
+          Log in
+        </Button>
+      </form>
+
+      <p className="mt-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
+        New to NextGen?{" "}
+        <Link href="/sign-up" className="font-semibold text-violet-600 hover:underline dark:text-violet-400">
+          Create an account
+        </Link>
+      </p>
+    </AuthLayout>
   );
 }

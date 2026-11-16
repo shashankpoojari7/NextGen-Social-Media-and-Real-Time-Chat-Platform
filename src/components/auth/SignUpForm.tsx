@@ -22,14 +22,15 @@ import { useRouter } from "next/navigation";
 import { useDebounceValue } from "usehooks-ts";
 import Link from "next/link";
 import { toast } from "sonner";
+import AuthLayout, { inputClass, primaryButtonClass } from "./AuthLayout";
 
-// Define the type for the form data based on the schema
 type SignUpFormData = z.infer<typeof signUpSchema>;
+
+const labelClass = "text-zinc-700 dark:text-zinc-300";
 
 export default function SignUpForm() {
   const [isFormSubmitting, setIsFormSubmitting] = useState(false);
-  
-  // LOGIC FOR DEBOUNCING USERNAME CHECK (UNCHANGED)
+
   const [debouncedValue, setValue] = useDebounceValue("", 500);
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
   const [userMessage, setUserMessage] = useState("");
@@ -39,7 +40,6 @@ export default function SignUpForm() {
 
   const router = useRouter();
 
-  // FORM SETUP (UNCHANGED)
   const form = useForm<SignUpFormData>({
     resolver: zodResolver(signUpSchema),
     defaultValues: {
@@ -51,10 +51,6 @@ export default function SignUpForm() {
     },
   });
 
-  const { watch } = form;
-  const watchedUsername = watch("username"); // Use watchedUsername for the input value
-  
-  // Set debounced value on username change (UNCHANGED)
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
       if (name === "username") {
@@ -64,20 +60,17 @@ export default function SignUpForm() {
     return () => subscription.unsubscribe();
   }, [form, setValue]);
 
-  // Check username uniqueness (UNCHANGED)
   useEffect(() => {
     async function checkUsernameUnique(val: string) {
-      // Logic checks for presence of debouncedValue to avoid initial/empty check
       if (debouncedValue) {
         setIsCheckingUsername(true);
         try {
-          // Replace with your actual API endpoint logic
           const response = await fetch(
             `/api/user/check-unique-username/${debouncedValue}`
           );
           const data = await response.json();
-          
-          if (response.ok && data.success) { // Check for successful HTTP status and API success field
+
+          if (response.ok && data.success) {
             setUserMessage(data.message);
             setUniqueUsername(true);
           } else {
@@ -92,15 +85,13 @@ export default function SignUpForm() {
           setIsCheckingUsername(false);
         }
       } else if (!debouncedValue) {
-        // Clear message if input is empty
         setUserMessage("");
-        setUniqueUsername(false); // Assuming empty means not yet valid
+        setUniqueUsername(false);
       }
     }
     checkUsernameUnique(debouncedValue);
   }, [debouncedValue]);
 
-  // SUBMIT HANDLER (UNCHANGED)
   async function onSubmit(data: SignUpFormData) {
     if (!uniqueUsername) {
       toast.error("Please choose a valid username");
@@ -110,66 +101,49 @@ export default function SignUpForm() {
     setIsFormSubmitting(true);
 
     try {
-      const response = await axios.post<ApiResponse>(
-        "/api/auth/sign-up",
-        data
-      );
+      const response = await axios.post<ApiResponse>("/api/auth/sign-up", data);
 
       if (response.data.success) {
         toast.success(response?.data?.message || "User registered Successfully");
         router.push("/sign-in");
       } else {
-        // This handles server-side validation errors not caught by Zod
         toast.error(response?.data?.message || "Registration failed.");
       }
     } catch (error) {
       const axiosError = error as AxiosError<ApiResponse>;
-      const errorMessage = axiosError.response?.data?.message || "An unknown error occurred during sign-up.";
+      const errorMessage =
+        axiosError.response?.data?.message ||
+        "An unknown error occurred during sign-up.";
       toast.error(errorMessage);
     } finally {
       setIsFormSubmitting(false);
     }
   }
 
-  // --- REFINED UI START ---
-
   return (
-    // Responsive container setup (Center the form, apply background)
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          // Card styling: Responsive width, background, rounded corners, shadow
-          className="w-full max-w-md md:max-w-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-8 rounded-xl shadow-lg space-y-6 transition-colors duration-300"
-        >
-          {/* Header */}
-          <h1 className="text-3xl font-bold text-center text-gray-900 dark:text-white">
-            Create Account
-          </h1>
-          <p className="text-sm text-center text-gray-500 dark:text-gray-400 mb-6">
-            Sign up to see photos and videos from your friends.
-          </p>
+    <AuthLayout variant="signup">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">
+          Join NextGen ✨
+        </h1>
+        <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+          Create your account and start sharing with friends.
+        </p>
+      </div>
 
-          {/* IDENTIFIER */}
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          {/* EMAIL */}
           <FormField
             control={form.control}
             name="identifier"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-gray-700 dark:text-gray-300">Email</FormLabel>
+                <FormLabel className={labelClass}>Email</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="Email"
-                    className="
-                      bg-gray-50 dark:bg-gray-800 
-                      text-gray-900 dark:text-gray-100
-                      border border-gray-300 dark:border-gray-700
-                      rounded-xl h-12 px-4
-                      placeholder:text-gray-400 dark:placeholder:text-gray-400
-                      focus:outline-none
-                      focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600
-                      transition-all duration-200
-                    "
+                    placeholder="you@example.com"
+                    className={inputClass}
                     disabled={isFormSubmitting}
                     {...field}
                   />
@@ -185,70 +159,51 @@ export default function SignUpForm() {
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-gray-700 dark:text-gray-300">Password</FormLabel>
+                <FormLabel className={labelClass}>Password</FormLabel>
                 <div className="relative">
                   <FormControl>
                     <Input
                       type={togglePassword ? "text" : "password"}
-                      placeholder="Password"
-                      className="
-                        bg-gray-50 dark:bg-gray-800 
-                        text-gray-900 dark:text-gray-100
-                        border border-gray-300 dark:border-gray-700
-                        rounded-xl h-12 px-4 pr-12
-                        placeholder:text-gray-400 dark:placeholder:text-gray-400
-                        focus:outline-none
-                        focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600
-                        transition-all duration-200
-                      "
+                      placeholder="Create a password"
+                      className={`${inputClass} pr-12`}
                       disabled={isFormSubmitting}
                       {...field}
                     />
                   </FormControl>
-
-                  <div
+                  <button
+                    type="button"
                     onClick={() => setTogglePassword(!togglePassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 transition-colors hover:text-zinc-600 dark:hover:text-zinc-200"
+                    aria-label={togglePassword ? "Hide password" : "Show password"}
                   >
                     {togglePassword ? <Eye size={20} /> : <EyeOff size={20} />}
-                  </div>
+                  </button>
                 </div>
                 <FormMessage />
               </FormItem>
             )}
           />
 
-
-          {/* USERNAME (Username Check Logic Intact) */}
+          {/* USERNAME */}
           <FormField
             control={form.control}
             name="username"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-gray-700 dark:text-gray-300">Username</FormLabel>
+                <FormLabel className={labelClass}>Username</FormLabel>
                 <div className="relative">
                   <FormControl>
                     <Input
-                      placeholder="Username"
-                      className="
-                        bg-gray-50 dark:bg-gray-800 
-                        text-gray-900 dark:text-gray-100
-                        border border-gray-300 dark:border-gray-700
-                        rounded-xl h-12 px-4 pr-12
-                        placeholder:text-gray-400 dark:placeholder:text-gray-400
-                        focus:outline-none
-                        focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600
-                        transition-all duration-200
-                      "
+                      placeholder="pick a unique username"
+                      className={`${inputClass} pr-12`}
                       {...field}
                       onFocus={() => setUsernameMsg(true)}
                       onBlur={() => setUsernameMsg(false)}
                     />
                   </FormControl>
-
                   <div className="absolute right-4 top-1/2 -translate-y-1/2">
                     {isCheckingUsername ? (
-                      <Loader2 className="animate-spin text-blue-500" size={18} />
+                      <Loader2 className="animate-spin text-violet-500" size={18} />
                     ) : userMessage ? (
                       uniqueUsername ? (
                         <CircleCheck className="text-green-500" size={18} />
@@ -258,103 +213,67 @@ export default function SignUpForm() {
                     ) : null}
                   </div>
                 </div>
-
                 {userMessage && usernameMsg && (
-                  <p
-                    className={`text-sm mt-1 ${
-                      uniqueUsername ? "text-green-500" : "text-red-500"
-                    }`}
-                  >
+                  <p className={`mt-1 text-sm ${uniqueUsername ? "text-green-500" : "text-red-500"}`}>
                     {userMessage}
                   </p>
                 )}
-
                 <FormMessage />
               </FormItem>
             )}
           />
 
+          {/* FULL NAME + DOB side by side on larger screens */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="fullname"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className={labelClass}>Full name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Your name" className={inputClass} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          {/* FULLNAME */}
-          <FormField
-            control={form.control}
-            name="fullname"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-gray-700 dark:text-gray-300">Full Name</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="Full Name"
-                    className="
-                      bg-gray-50 dark:bg-gray-800 
-                      text-gray-900 dark:text-gray-100
-                      border border-gray-300 dark:border-gray-700
-                      rounded-xl h-12 px-4
-                      placeholder:text-gray-400 dark:placeholder:text-gray-400
-                      focus:outline-none
-                      focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600
-                      transition-all duration-200
-                    "
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+            <FormField
+              control={form.control}
+              name="dob"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className={labelClass}>Date of birth</FormLabel>
+                  <FormControl>
+                    <Input type="date" className={inputClass} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
-
-          {/* DOB */}
-          <FormField
-            control={form.control}
-            name="dob"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-gray-700 dark:text-gray-300">Date of Birth</FormLabel>
-                <FormControl>
-                  <Input
-                    type="date"
-                    className="
-                      bg-gray-50 dark:bg-gray-800 
-                      text-gray-900 dark:text-gray-100
-                      border border-gray-300 dark:border-gray-700
-                      rounded-xl h-12 px-4
-                      placeholder:text-gray-400 dark:placeholder:text-gray-400
-                      focus:outline-none
-                      focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600
-                      transition-all duration-200
-                    "
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-
-          {/* SUBMIT */}
-          <Button 
-            type="submit" 
-            className="w-full h-10 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 transition-colors text-white"
-            disabled={isFormSubmitting || isCheckingUsername || !uniqueUsername} // Disable if checking or not unique
+          <Button
+            type="submit"
+            className={`${primaryButtonClass} mt-2`}
+            disabled={isFormSubmitting || isCheckingUsername || !uniqueUsername}
           >
             {isFormSubmitting ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
-              "Submit"
+              "Create account"
             )}
           </Button>
 
-          {/* Sign In Link */}
-          <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-            Already have an Account?{" "}
-            <Link href={"/sign-in"} className="text-blue-600 dark:text-blue-500 hover:underline font-medium">
-              Sign In
+          <p className="pt-2 text-center text-sm text-zinc-500 dark:text-zinc-400">
+            Already have an account?{" "}
+            <Link href="/sign-in" className="font-semibold text-violet-600 hover:underline dark:text-violet-400">
+              Log in
             </Link>
           </p>
         </form>
       </Form>
-    </div>
+    </AuthLayout>
   );
 }
