@@ -1,13 +1,16 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Save, Pencil, Loader2, CircleCheck, CircleX, ChevronLeft } from "lucide-react";
+import { Loader2, CircleCheck, CircleX, ChevronLeft } from "lucide-react";
 import { useUserSettings } from "@/hooks/useUserSettings";
 import { useDebounceValue } from "usehooks-ts";
 import { toast } from "sonner";
 import { axiosInstance } from "@/services/axios";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
+
+const inputClass =
+  "w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2.5 text-[15px] outline-none transition-colors placeholder:text-zinc-400 focus:border-[#97bfb4] focus:ring-2 focus:ring-[#97bfb4]/30 dark:border-zinc-800 dark:bg-[#111] dark:placeholder:text-zinc-600";
 
 export default function UpdateProfilePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -74,7 +77,7 @@ export default function UpdateProfilePage() {
     checkUsername();
   }, [debouncedUsername, data]);
 
-  const handleChange = (e: any) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setIsChanged(true);
 
@@ -88,7 +91,7 @@ export default function UpdateProfilePage() {
     }
   };
 
-  const handleImageUpload = (e: any) => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -137,52 +140,47 @@ export default function UpdateProfilePage() {
     }
   };
 
-  // Skeleton
   if (isLoading) {
-    return <div className="animate-pulse p-10 min-h-screen" />;
+    return <div className="min-h-screen animate-pulse p-10" />;
   }
 
-  // UI
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0a0a0a] text-black dark:text-white p-6 md:p-10">
-      <div className="max-w-3xl mx-auto">
-        {/* Back Button */}
-        <button
-          onClick={() => window.history.back()}
-          className="inline-flex items-center gap-2 mb-10 group"
-        >
-          <ChevronLeft className="w-6 h-6 group-hover:-translate-x-1 transition" />
-          <h1 className="text-2xl font-bold">Update Profile</h1>
-        </button>
+    <div className="min-h-screen bg-white p-4 text-black dark:bg-[#0a0a0a] dark:text-white md:p-8">
+      <div className="mx-auto max-w-2xl">
+        <div className="mb-8 flex items-center gap-2">
+          <button
+            onClick={() => window.history.back()}
+            aria-label="Go back"
+            className="-ml-2 rounded-full p-2 text-zinc-600 transition-colors hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"
+          >
+            <ChevronLeft className="h-6 w-6" />
+          </button>
+          <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Edit profile</h1>
+        </div>
 
-        {/* Profile Card */}
-        <div className="bg-[#97bfb4] dark:bg-[#7da89e] text-white rounded-3xl px-4 py-6 sm:py-8 sm:px-6 shadow-xl">
-          <div className="flex items-center gap-4 sm:gap-6">
-            {/* Image */}
-            <div className="relative">
-              <div className="w-23 h-23 sm:w-28 sm:h-28 rounded-full overflow-hidden border-4 border-white/40 shadow-lg">
-                <img
-                  src={profileImage || "/no-profile.jpg"}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-
-              {/* Upload */}
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="absolute bottom-0 right-0 bg-white p-2 rounded-full shadow"
-              >
-                <Pencil className="w-2 h-2 sm:w-4 sm:h-4 text-[#97bfb4]" />
-              </button>
-            </div>
-
-            {/* User Info */}
-            <div>
-              <h2 className="text-xl sm:text-3xl font-bold">{formData.fullname}</h2>
-              <p className="opacity-90 text-sm sm:text-lg">@{formData.username}</p>
-            </div>
+        {/* Avatar row */}
+        <div className="mb-8 flex items-center gap-4 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={profileImage || "/no-profile.jpg"}
+            alt="Profile"
+            className="h-16 w-16 shrink-0 rounded-full border border-zinc-200 object-cover dark:border-zinc-800 sm:h-20 sm:w-20"
+          />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-base font-semibold">
+              {formData.username || "username"}
+            </p>
+            <p className="truncate text-sm text-zinc-500 dark:text-zinc-400">
+              {formData.fullname}
+            </p>
           </div>
-
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="shrink-0 rounded-lg border border-zinc-300 px-3.5 py-2 text-sm font-medium transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
+          >
+            Change photo
+          </button>
           <input
             ref={fileInputRef}
             type="file"
@@ -192,27 +190,22 @@ export default function UpdateProfilePage() {
           />
         </div>
 
-        {/* FORM */}
-        <div className="space-y-6 mt-6">
-          {/* Username */}
+        <div className="space-y-5">
           <div>
-            <label className="font-semibold mb-1 block">Username</label>
-
+            <label htmlFor="username" className="mb-1.5 block text-sm font-medium">
+              Username
+            </label>
             <div className="relative">
               <input
+                id="username"
                 name="username"
                 value={formData.username}
                 onChange={handleChange}
-                className="w-full bg-white dark:bg-[#1a1a1a] 
-                          text-black dark:text-white 
-                          border border-gray-300 dark:border-gray-700 
-                          rounded-2xl px-4 py-3 outline-none 
-                          focus:ring-2 focus:ring-[#97bfb4] dark:focus:ring-[#7da89e]"
+                className={`${inputClass} pr-10`}
               />
-
               <span className="absolute right-3 top-1/2 -translate-y-1/2">
                 {isCheckingUsername ? (
-                  <Loader2 className="animate-spin text-gray-400" size={18} />
+                  <Loader2 className="animate-spin text-zinc-400" size={18} />
                 ) : usernameMessage ? (
                   isUsernameUnique ? (
                     <CircleCheck className="text-green-500" size={18} />
@@ -222,10 +215,9 @@ export default function UpdateProfilePage() {
                 ) : null}
               </span>
             </div>
-
             {usernameMessage && (
               <p
-                className={`text-sm mt-1 ${
+                className={`mt-1.5 text-sm ${
                   isUsernameUnique ? "text-green-600" : "text-red-500"
                 }`}
               >
@@ -234,49 +226,43 @@ export default function UpdateProfilePage() {
             )}
           </div>
 
-          {/* Fullname */}
           <div>
-            <label className="font-semibold mb-1 block">Full Name</label>
+            <label htmlFor="fullname" className="mb-1.5 block text-sm font-medium">
+              Full name
+            </label>
             <input
+              id="fullname"
               name="fullname"
               value={formData.fullname}
               onChange={handleChange}
-              className="w-full bg-white dark:bg-[#1a1a1a] 
-                        text-black dark:text-white 
-                        border border-gray-300 dark:border-gray-700 
-                        rounded-2xl px-4 py-3 outline-none
-                        focus:ring-2 focus:ring-[#97bfb4] dark:focus:ring-[#7da89e]"
+              className={inputClass}
             />
           </div>
 
-          {/* Bio */}
           <div>
-            <label className="font-semibold mb-1 block">Bio</label>
+            <label htmlFor="bio" className="mb-1.5 block text-sm font-medium">
+              Bio
+            </label>
             <textarea
+              id="bio"
               name="bio"
               value={formData.bio}
               onChange={handleChange}
-              className="w-full h-32 bg-white dark:bg-[#1a1a1a] 
-                        text-black dark:text-white 
-                        border border-gray-300 dark:border-gray-700 
-                        rounded-2xl p-4 outline-none
-                        focus:ring-2 focus:ring-[#97bfb4] dark:focus:ring-[#7da89e]"
+              placeholder="Tell people a little about yourself"
+              className={`${inputClass} h-28 resize-none`}
             />
           </div>
 
-          {/* Save */}
-          <button
-            onClick={handleSubmit}
-            disabled={!isChanged || isSaving}
-            className="w-full bg-linear-to-r from-[#97bfb4] to-[#7da89e] 
-                      text-white py-4 rounded-2xl 
-                      flex justify-center items-center gap-3 
-                      disabled:opacity-50 disabled:cursor-not-allowed
-                      shadow-md"
-          >
-            {isSaving ? <Loader2 className="animate-spin" /> : <Save />}
-            Save Changes
-          </button>
+          <div className="flex justify-end border-t border-zinc-200 pt-5 dark:border-zinc-800">
+            <button
+              onClick={handleSubmit}
+              disabled={!isChanged || isSaving}
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#97bfb4] px-6 py-2.5 text-[15px] font-semibold text-zinc-900 transition-colors hover:bg-[#86aea3] disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
+            >
+              {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+              Save changes
+            </button>
+          </div>
         </div>
       </div>
     </div>

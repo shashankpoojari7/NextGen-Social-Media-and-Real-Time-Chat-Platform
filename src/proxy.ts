@@ -24,23 +24,30 @@ export async function proxy(req: NextRequest) {
     secret: process.env.NEXTAUTH_SECRET,
   });
 
+  const isAuthenticated = !!token;
   const isPublic = publicRoutes.includes(pathname);
+  const isApiRoute = pathname.startsWith("/api");
 
-  if (!token) {
+  if (!isAuthenticated) {
     if (isPublic) {
       return NextResponse.next();
     }
 
-    const signInUrl = new URL("/sign-in", req.url);
-    return NextResponse.redirect(signInUrl);
+    if (isApiRoute) {
+      return NextResponse.json(
+        { message: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    return NextResponse.redirect(new URL("/sign-in", req.url));
   }
 
-  if (isPublic && pathname !== "/") {
-    const homeUrl = new URL("/", req.url);
-    return NextResponse.redirect(homeUrl);
+  if (isAuthenticated && (isPublic || pathname === "/")) {
+    return NextResponse.redirect(new URL("/feed", req.url));
   }
 
-  if (pathname.startsWith("/api")) {
+  if (isApiRoute) {
     const requestHeaders = new Headers(req.headers);
     requestHeaders.set("x-user-id", String(token.id));
     requestHeaders.set("x-user-email", String(token.email));
@@ -53,10 +60,6 @@ export async function proxy(req: NextRequest) {
   return NextResponse.next();
 }
 
-// export const config = {
-//   matcher: ["/((?!_next|api/auth).*)"], 
-//   runtime: "nodejs"
-// };
 export const config = {
   matcher: [
     '/((?!api/user/check-unique-username|api/auth|_next/static|_next/image|favicon.ico).*)',

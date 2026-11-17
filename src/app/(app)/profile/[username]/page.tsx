@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { axiosInstance } from "@/services/axios";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Camera, Lock } from "lucide-react";
+import { Camera, Lock, Expand, Upload, Trash2 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
 import { FollowSection } from "@/components/profile/FollowSection";
@@ -254,36 +254,47 @@ export default function UserProfilePage() {
       {/* ── Profile Options Dialog ── */}
       <Dialog open={isOptionsOpen} onOpenChange={setIsOptionsOpen}>
         <DialogContent
-          className="w-[90vw] max-w-[400px] bg-white dark:bg-[#262626] text-gray-900 dark:text-white border-none rounded-2xl p-0 overflow-hidden"
+          className="w-[90vw] gap-0 max-w-[380px] overflow-hidden rounded-2xl border border-zinc-200 bg-white p-0 text-zinc-900 shadow-xl dark:border-zinc-800 dark:bg-[#141414] dark:text-white"
           showCloseButton={false}
         >
-          <DialogTitle className="sr-only">Profile Photo Options</DialogTitle>
-          <div className="flex flex-col text-center divide-y divide-gray-300 dark:divide-gray-500">
+          <DialogTitle className="px-5 pb-3 pt-5 text-center text-base font-semibold">
+            Profile photo
+          </DialogTitle>
+
+          <div className="flex mt-3 flex-col divide-y divide-zinc-200 border-t border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
             <button
               onClick={() => setIsFullscreenOpen(true)}
-              className="py-4 text-base text-blue-500 dark:text-blue-500 font-semibold hover:bg-gray-100 dark:hover:bg-[#2a2a2a] transition active:bg-gray-200 dark:active:bg-[#333333]"
+              className="flex items-center gap-3 px-5 py-3.5 text-left text-[15px] font-medium transition-colors hover:bg-zinc-100 active:bg-zinc-200 dark:hover:bg-zinc-900 dark:active:bg-zinc-800"
             >
-              View Fullscreen
+              <Expand className="h-5 w-5 text-zinc-500 dark:text-zinc-400" />
+              View fullscreen
             </button>
+
             {isOwnProfile && (
               <>
                 <button
                   onClick={handleUploadPhoto}
-                  className="py-4 text-base text-blue-500 dark:text-blue-500 font-semibold hover:bg-gray-100 dark:hover:bg-[#2a2a2a] transition active:bg-gray-200 dark:active:bg-[#333333]"
+                  className="flex items-center gap-3 px-5 py-3.5 text-left text-[15px] font-medium transition-colors hover:bg-zinc-100 active:bg-zinc-200 dark:hover:bg-zinc-900 dark:active:bg-zinc-800"
                 >
-                  Upload Photo
+                  <Upload className="h-5 w-5 text-zinc-500 dark:text-zinc-400" />
+                  Upload photo
                 </button>
+
                 <button
                   onClick={handleRemovePhoto}
-                  className="py-4 text-base text-red-500 dark:text-red-500 font-semibold hover:bg-gray-100 dark:hover:bg-[#2a2a2a] transition active:bg-gray-200 dark:active:bg-[#333333]"
+                  className="flex items-center gap-3 px-5 py-3.5 text-left text-[15px] font-medium text-red-600 transition-colors hover:bg-red-50 active:bg-red-100 dark:text-red-400 dark:hover:bg-red-950/30 dark:active:bg-red-950/50"
                 >
-                  Remove Current Photo
+                  <Trash2 className="h-5 w-5" />
+                  Remove current photo
                 </button>
               </>
             )}
+          </div>
+
+          <div className="border-t border-zinc-200 p-3 dark:border-zinc-800">
             <button
               onClick={() => setIsOptionsOpen(false)}
-              className="py-4 text-base text-gray-600 dark:text-gray-300 font-medium hover:bg-gray-100 dark:hover:bg-[#2a2a2a] transition active:bg-gray-200 dark:active:bg-[#333333]"
+              className="w-full rounded-lg py-2.5 text-[15px] font-medium text-zinc-600 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900"
             >
               Cancel
             </button>

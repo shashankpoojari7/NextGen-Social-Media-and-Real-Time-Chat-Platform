@@ -30,7 +30,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { CircleCheck, CircleX, Loader2, Camera, X } from "lucide-react";
+import { CircleCheck, CircleX, Loader2, Camera } from "lucide-react";
 import { ApiResponse } from "@/lib/ApiResponse";
 import { useQueryClient } from "@tanstack/react-query";
 

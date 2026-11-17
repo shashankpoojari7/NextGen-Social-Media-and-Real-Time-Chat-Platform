@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Save, Loader2, Lock, ChevronLeft } from "lucide-react";
+import { Loader2, ChevronLeft, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { axiosInstance } from "@/services/axios";
@@ -14,8 +14,9 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage
+  FormMessage,
 } from "@/components/ui/form";
+import { AxiosError } from "axios";
 
 const passwordSchema = z
   .object({
@@ -36,6 +37,26 @@ const passwordSchema = z
 
 type PasswordFormSchema = z.infer<typeof passwordSchema>;
 
+const inputClass =
+  "w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2.5 pr-11 text-[15px] outline-none transition-colors placeholder:text-zinc-400 focus:border-[#97bfb4] focus:ring-2 focus:ring-[#97bfb4]/30 dark:border-zinc-800 dark:bg-[#111] dark:placeholder:text-zinc-600";
+
+function PasswordInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="relative">
+      <input {...props} type={show ? "text" : "password"} className={inputClass} />
+      <button
+        type="button"
+        onClick={() => setShow((s) => !s)}
+        aria-label={show ? "Hide password" : "Show password"}
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 transition-colors hover:text-zinc-700 dark:hover:text-zinc-200"
+      >
+        {show ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+      </button>
+    </div>
+  );
+}
+
 export default function ChangePasswordForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
@@ -45,9 +66,9 @@ export default function ChangePasswordForm() {
     defaultValues: {
       currentPassword: "",
       newPassword: "",
-      confirmPassword: ""
+      confirmPassword: "",
     },
-    mode: "onChange"
+    mode: "onChange",
   });
 
   const onSubmit = async (values: PasswordFormSchema) => {
@@ -70,123 +91,91 @@ export default function ChangePasswordForm() {
       } else {
         toast.error(res.data.message || "Password update failed.");
       }
-    } catch (error: any) {
-      const msg =
-        error?.response?.data?.message || "Something went wrong.";
-      toast.error(msg);
+    } catch (error) {
+      const axiosError = error as AxiosError<{message?: string}>;
+      toast.error(
+        axiosError?.response?.data?.message || "Something went wrong."
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="w-full mx-auto p-6 sm:p-10 bg-white dark:bg-[#0a0a0a] shadow-xl rounded-xl text-black dark:text-white">
-      {/* HEADER */}
-      <div className="flex flex-col mb-8 pb-4 border-b dark:border-gray-800">
-        <button
-          onClick={() => router.back()}
-          className="flex items-center gap-3 group text-black dark:text-white 
-                    hover:text-[#97bfb4] dark:hover:text-[#97bfb4]"
-        >
-          <ChevronLeft className="w-6 h-6 group-hover:-translate-x-1 transition" />
-          <div className="flex items-center gap-2">
-            <Lock className="w-6 h-6 text-[#97bfb4]" />
-            <h1 className="text-2xl font-bold">Change Password</h1>
-          </div>
-        </button>
-      </div>
-
-      {/* FORM */}
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <FormField
-            control={form.control}
-            name="currentPassword"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="font-semibold">
-                  Current Password
-                </FormLabel>
-                <FormControl>
-                  <input
-                    {...field}
-                    type="password"
-                    placeholder="Enter your current password"
-                    className="w-full bg-white dark:bg-[#1a1a1a] border border-gray-300 
-                              dark:border-[#333] rounded-xl px-4 py-3.5 focus:ring-2
-                              focus:ring-[#97bfb4]"
-                  />
-                </FormControl>
-                <FormMessage className="text-xs text-red-500" />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="newPassword"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="font-semibold">New Password</FormLabel>
-                <FormControl>
-                  <input
-                    {...field}
-                    type="password"
-                    placeholder="Enter new password"
-                    className="w-full bg-white dark:bg-[#1a1a1a] border border-gray-300 
-                              dark:border-[#333] rounded-xl px-4 py-3.5 focus:ring-2
-                              focus:ring-[#97bfb4]"
-                  />
-                </FormControl>
-                <FormMessage className="text-xs text-red-500" />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="confirmPassword"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="font-semibold">
-                  Confirm Password
-                </FormLabel>
-                <FormControl>
-                  <input
-                    {...field}
-                    type="password"
-                    placeholder="Re-enter new password"
-                    className="w-full bg-white dark:bg-[#1a1a1a] border border-gray-300 
-                              dark:border-[#333] rounded-xl px-4 py-3.5 focus:ring-2
-                              focus:ring-[#97bfb4]"
-                  />
-                </FormControl>
-                <FormMessage className="text-xs text-red-500" />
-              </FormItem>
-            )}
-          />
-
+    <div className="min-h-screen bg-white p-4 text-black dark:bg-[#0a0a0a] dark:text-white md:p-8">
+      <div className="mx-auto max-w-2xl">
+        {/* Header */}
+        <div className="mb-2 flex items-center gap-2">
           <button
-            type="submit"
-            disabled={!form.formState.isValid || isSubmitting}
-            className="w-full bg-linear-to-r from-[#97bfb4] to-[#7da89e] 
-                      hover:opacity-90 text-white font-semibold py-4 px-6 rounded-xl
-                      flex items-center justify-center gap-2 disabled:opacity-50"
+            onClick={() => router.back()}
+            aria-label="Go back"
+            className="-ml-2 rounded-full p-2 text-zinc-600 transition-colors hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"
           >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Updating...
-              </>
-            ) : (
-              <>
-                <Save className="w-5 h-5" />
-                Change Password
-              </>
-            )}
+            <ChevronLeft className="h-6 w-6" />
           </button>
-        </form>
-      </Form>
+          <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Change password</h1>
+        </div>
+        <p className="mb-8 ml-9 text-sm text-zinc-500 dark:text-zinc-400">
+          Use at least 8 characters with upper and lower case letters, a number and a symbol.
+        </p>
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+            <FormField
+              control={form.control}
+              name="currentPassword"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-medium">Current password</FormLabel>
+                  <FormControl>
+                    <PasswordInput {...field} placeholder="Enter current password" />
+                  </FormControl>
+                  <FormMessage className="text-xs text-red-500" />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="newPassword"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-medium">New password</FormLabel>
+                  <FormControl>
+                    <PasswordInput {...field} placeholder="Enter new password" />
+                  </FormControl>
+                  <FormMessage className="text-xs text-red-500" />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="confirmPassword"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-medium">Confirm new password</FormLabel>
+                  <FormControl>
+                    <PasswordInput {...field} placeholder="Re-enter new password" />
+                  </FormControl>
+                  <FormMessage className="text-xs text-red-500" />
+                </FormItem>
+              )}
+            />
+
+            <div className="flex justify-end border-t border-zinc-200 pt-5 dark:border-zinc-800">
+              <button
+                type="submit"
+                disabled={!form.formState.isValid || isSubmitting}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#97bfb4] px-6 py-2.5 text-[15px] font-semibold text-zinc-900 transition-colors hover:bg-[#86aea3] disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
+              >
+                {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                {isSubmitting ? "Updating..." : "Update password"}
+              </button>
+            </div>
+          </form>
+        </Form>
+      </div>
     </div>
   );
 }

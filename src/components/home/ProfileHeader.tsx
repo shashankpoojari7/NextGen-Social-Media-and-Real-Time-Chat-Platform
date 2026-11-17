@@ -6,7 +6,7 @@ export default function ProfileHeader() {
   const { data: session } = useSession();
 
   return (
-    <div className="w-full mt-[65px] mb-3 md:mt-2 px-1">
+    <div className="w-full mt-1 mb-3 md:mt-2 px-1">
       <div className="flex items-center justify-between p-3 md:p-4 bg-linear-to-r from-teal-400 to-emerald-400 dark:bg-linear-to-r dark:from-teal-600 dark:to-emerald-600 rounded-lg mb-1.5 sm:mb-2 shadow-md">
         <div>
           <p className="text-[16px] md:text-[18px] font-semibold text-gray-900 dark:text-white">

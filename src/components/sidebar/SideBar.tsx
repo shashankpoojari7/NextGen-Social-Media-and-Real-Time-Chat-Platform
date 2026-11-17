@@ -12,6 +12,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import {
   AlertDialog,
@@ -37,11 +38,20 @@ import { toast } from "sonner";
 import Image from "next/image";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNotificationStore } from "@/store/useNotificationStore";
 import NotificationRightDrawer from "../notification/NotificationDrawer";
 import { useDrawerStore } from "@/store/useDrawerStore";
+
+function Badge({ count }: { count: number }) {
+  if (count <= 0) return null;
+  return (
+    <span className="absolute -right-2 -top-1.5 flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
 
 function SideBar() {
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -53,9 +63,27 @@ function SideBar() {
   const notificationCount = useNotificationStore((s) => s.notificationCount);
   const messageCount = useNotificationStore((s) => s.messageCount);
 
-  const { data: session } = useSession()
-  const queryClient = useQueryClient()
+  const { data: session } = useSession();
+  const queryClient = useQueryClient();
+  const pathname = usePathname();
   const { isNotificationDrawerOpen, toggle } = useDrawerStore();
+
+  const collapsed = isNotificationDrawerOpen;
+  const labelClass = collapsed ? "hidden" : "hidden lg:block";
+  const rowAlign = collapsed ? "justify-center" : "justify-center lg:justify-start";
+
+  const isActive = (href: string) =>
+    href === "/" ? pathname === "/" || pathname === "/feed" : pathname.startsWith(href);
+
+  const itemClass = (active = false) =>
+    `flex w-full cursor-pointer items-center rounded-lg px-3 py-3 transition-colors duration-150 ${
+      active
+        ? "bg-zinc-100 font-bold text-black dark:bg-zinc-900 dark:text-white"
+        : "font-medium text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900"
+    }`;
+
+  const iconClass = (active = false) =>
+    `h-6 w-6 shrink-0 ${active ? "stroke-[2.5]" : ""}`;
 
   const handleLogout = async () => {
     try {
@@ -82,8 +110,8 @@ function SideBar() {
       toast.error("Please add an image and caption.");
       return;
     }
-    
-    setIsFormSubmitting(true)
+
+    setIsFormSubmitting(true);
 
     const formData = new FormData();
     formData.append("caption", caption);
@@ -91,15 +119,9 @@ function SideBar() {
     formData.append("image", imageFile);
 
     try {
-      const response = await axios.post(
-        "/api/posts/create-post",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      const response = await axios.post("/api/posts/create-post", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
       if (response.data.success) {
         toast.success(response.data.message);
@@ -108,34 +130,50 @@ function SideBar() {
         setCaption("");
         setLocation("");
         setOpen(false);
-        setIsFormSubmitting(false)
-        queryClient.invalidateQueries({queryKey: ['user-profile-posts']})
+        setIsFormSubmitting(false);
+        queryClient.invalidateQueries({ queryKey: ["user-profile-posts"] });
         queryClient.invalidateQueries({ queryKey: ["public-posts"] });
-        queryClient.invalidateQueries({queryKey: ['user-profile']})
+        queryClient.invalidateQueries({ queryKey: ["user-profile"] });
       }
-    } catch (error: any) {
-      setIsFormSubmitting(false)
-      console.log(error.response.data.message);
+    } catch (error) {
+      const axiosError = error as AxiosError<{message?: string}>;
+      setIsFormSubmitting(false);
+      toast.error(
+        axiosError.response?.data?.message || "Upload failed"
+      );
     }
   };
+
+  const navLinks = [
+    { href: "/", label: "Home", icon: HomeIcon },
+    { href: "/search", label: "Search", icon: Search },
+    { href: "/connect", label: "Connect", icon: UserPlus },
+  ];
+
+  const profileActive = isActive("/profile");
 
   return (
     <>
       <nav
         className={`
-          fixed top-0 left-0 h-screen hidden md:block 
-          bg-white dark:bg-[#0a0a0a] border-r border-gray-200 dark:border-gray-900 
-          text-black dark:text-white px-3 py-2 z-50
+          fixed top-0 left-0 z-50 hidden h-screen md:block
+          border-r border-zinc-200 bg-white px-3 py-2 text-black
+          dark:border-zinc-900 dark:bg-[#0a0a0a] dark:text-white
           transition-all duration-300 ease-in-out
-          ${isNotificationDrawerOpen ? "w-20" : "w-20 lg:w-60"}
+          ${collapsed ? "w-20" : "w-20 lg:w-60"}
         `}
       >
-        <div className="flex flex-col justify-between w-full h-full">
-          {/* Top Section */}
+        <div className="flex h-full w-full flex-col justify-between">
+          {/* TOP */}
           <div className="flex flex-col">
-            <Link href="/" className={`flex h-25 items-center w-full ${isNotificationDrawerOpen ? "justify-center" : "justify-center lg:pl-3 lg:justify-start"}`}>
+            <Link
+              href="/feed"
+              className={`flex h-24 w-full items-center ${
+                collapsed ? "justify-center" : "justify-center lg:justify-start lg:pl-3"
+              }`}
+            >
               <h2
-                className={`curly-heading text-black dark:text-white text-2xl text-text font-bold ${isNotificationDrawerOpen ? "hidden" : "hidden lg:block"}`}
+                className={`curly-heading text-2xl font-bold text-black dark:text-white ${labelClass}`}
               >
                 NextGen
               </h2>
@@ -144,126 +182,65 @@ function SideBar() {
                 alt="nextgen"
                 width={40}
                 height={40}
-                className={isNotificationDrawerOpen ? "block" : "block lg:hidden"}
+                className={collapsed ? "block" : "block lg:hidden"}
               />
             </Link>
 
-            <div className="flex flex-col justify-start space-y-2 mb-3">
-              <Link
-                href="/"
-                className="
-                  flex w-full items-center px-2 py-3 rounded-sm text-black dark:text-white 
-                  hover:bg-gray-100 dark:hover:bg-[#1f1f1f]
-                  transition-all duration-200"
-              >
-                <div className={`w-full flex items-center gap-2 ${isNotificationDrawerOpen ? "justify-center" : "justify-center lg:justify-start"}`}>
-                  <HomeIcon className="w-6 h-6 block" />
-                  <span className={`text-[16px] ml-3 font-bold ${isNotificationDrawerOpen ? "hidden" : "hidden lg:block"}`}>
-                    Home
-                  </span>
-                </div>
-              </Link>
+            <div className="flex flex-col space-y-1">
+              {navLinks.map(({ href, label, icon: Icon }) => {
+                const active = isActive(href);
+                return (
+                  <Link key={href} href={href} className={itemClass(active)}>
+                    <div className={`flex w-full items-center gap-4 ${rowAlign}`}>
+                      <Icon className={iconClass(active)} />
+                      <span className={`text-[16px] ${labelClass}`}>{label}</span>
+                    </div>
+                  </Link>
+                );
+              })}
 
-              <Link
-                href="/search"
-                className="
-                  flex w-full items-center px-2 py-3 rounded-sm text-black dark:text-white 
-                  hover:bg-gray-100 dark:hover:bg-[#1f1f1f] 
-                  transition-all duration-200"
-              >
-                <div className={`w-full flex items-center gap-2 ${isNotificationDrawerOpen ? "justify-center" : "justify-center lg:justify-start"}`}>
-                  <Search className="w-6 h-6 block" />
-                  <span className={`text-[16px] ml-3 font-bold ${isNotificationDrawerOpen ? "hidden" : "hidden lg:block"}`}>
-                    Search
-                  </span>
-                </div>
-              </Link>
-
-              <Link
-                href="/connect"
-                className="
-                  flex w-full items-center px-2 py-3 rounded-sm text-black dark:text-white 
-                  hover:bg-gray-100 dark:hover:bg-[#1f1f1f] 
-                  transition-all duration-200"
-              >
-                <div className={`w-full flex items-center gap-2 ${isNotificationDrawerOpen ? "justify-center" : "justify-center lg:justify-start"}`}>
-                  <UserPlus className="w-6 h-6 block" />
-                  <span className={`text-[16px] ml-3 font-bold ${isNotificationDrawerOpen ? "hidden" : "hidden lg:block"}`}>
-                    Connect
-                  </span>
-                </div>
-              </Link>
-
-              <Link
-                href="/messages"
-                className="
-                  flex w-full items-center px-2 py-3 rounded-sm text-black dark:text-white 
-                  hover:bg-gray-100 dark:hover:bg-[#1f1f1f] 
-                  transition-all duration-200"
-              >
-                <div className={`relative w-full flex items-center gap-2 ${isNotificationDrawerOpen ? "justify-center" : "justify-center lg:justify-start"}`}>
-                  
+              <Link href="/messages" className={itemClass(isActive("/messages"))}>
+                <div className={`flex w-full items-center gap-4 ${rowAlign}`}>
                   <div className="relative">
-                    <MessageCircle className="w-6 h-6 block" />
-                    {messageCount > 0 && (
-                      <span className="absolute -top-1.5 -right-1 bg-red-600 text-white text-[10px] font-bold rounded-full h-[17px] w-[17px] flex items-center justify-center">
-                        {messageCount}
-                      </span>
-                    )}
+                    <MessageCircle className={iconClass(isActive("/messages"))} />
+                    <Badge count={messageCount} />
                   </div>
-                  <span className={`text-[16px] ml-3 font-bold ${isNotificationDrawerOpen ? "hidden" : "hidden lg:block"}`}>
-                    Messages
-                  </span>
+                  <span className={`text-[16px] ${labelClass}`}>Messages</span>
                 </div>
               </Link>
 
-              <div 
-                className="
-                  flex w-full items-center px-2 py-3 rounded-sm text-black dark:text-white 
-                  hover:bg-gray-100 dark:hover:bg-[#1f1f1f]
-                  transition-all duration-200 cursor-pointer"
-                onClick={toggle}
-              >
-                <div className={`relative w-full flex items-center gap-2 ${isNotificationDrawerOpen ? "justify-center" : "justify-center lg:justify-start"}`}>
+              <div className={itemClass(isNotificationDrawerOpen)} onClick={toggle}>
+                <div className={`flex w-full items-center gap-4 ${rowAlign}`}>
                   <div className="relative">
-                    <Bell className="w-6 h-6" />
-                    {notificationCount > 0 && (
-                      <span className="absolute -top-1.5 -right-1 bg-red-600 text-white text-[10px] font-bold rounded-full h-[17px] w-[17px] flex items-center justify-center">
-                        {notificationCount}
-                      </span>
-                    )}
+                    <Bell className={iconClass(isNotificationDrawerOpen)} />
+                    <Badge count={notificationCount} />
                   </div>
-                  <span className={`text-[16px] ml-3 font-bold ${isNotificationDrawerOpen ? "hidden" : "hidden lg:block"}`}>Notifications</span>
+                  <span className={`text-[16px] ${labelClass}`}>Notifications</span>
                 </div>
               </div>
 
               <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger asChild>
-                  <div className="
-                    flex w-full items-center px-2 py-3 rounded-sm text-black dark:text-white 
-                    hover:bg-gray-100 dark:hover:bg-[#1f1f1f] 
-                    transition-all duration-200 cursor-pointer"
-                  >
-                    <div className={`w-full flex items-center gap-2 ${isNotificationDrawerOpen ? "justify-center" : "justify-center lg:justify-start"}`}>
-                      <PlusCircle className="w-6 h-6 block" />
-                      <span className={`text-[16px] ml-3 font-bold ${isNotificationDrawerOpen ? "hidden" : "hidden lg:block"}`}>
-                        Add post
-                      </span>
+                  <div className={itemClass(false)}>
+                    <div className={`flex w-full items-center gap-4 ${rowAlign}`}>
+                      <PlusCircle className={iconClass(false)} />
+                      <span className={`text-[16px] ${labelClass}`}>Add post</span>
                     </div>
                   </div>
                 </DialogTrigger>
 
-                <DialogContent 
-                onOpenAutoFocus={(e) => e.preventDefault()}
-                className="sm:max-w-[600px] bg-white dark:bg-neutral-900 text-black dark:text-white rounded-xl border border-gray-200 dark:border-neutral-700 shadow-lg">
+                <DialogContent
+                  onOpenAutoFocus={(e) => e.preventDefault()}
+                  className="rounded-xl border border-gray-200 bg-white text-black shadow-lg dark:border-neutral-700 dark:bg-neutral-900 dark:text-white sm:max-w-[600px]"
+                >
                   <DialogHeader>
-                    <DialogTitle className="text-lg font-semibold text-center">
+                    <DialogTitle className="text-center text-lg font-semibold">
                       Create a New Post
                     </DialogTitle>
                   </DialogHeader>
 
                   <form onSubmit={handleSubmit} className="space-y-5">
-                    <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4">
+                    <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 p-4 dark:border-gray-600">
                       {preview ? (
                         <>
                           <Image
@@ -271,7 +248,7 @@ function SideBar() {
                             alt="Preview"
                             width={500}
                             height={250}
-                            className="w-full max-h-[250px] object-cover rounded-md"
+                            className="max-h-[250px] w-full rounded-md object-cover"
                           />
                           <Button
                             type="button"
@@ -296,9 +273,9 @@ function SideBar() {
                           />
                           <label
                             htmlFor="file"
-                            className="cursor-pointer text-center flex flex-col items-center text-sm text-gray-500 dark:text-gray-400"
+                            className="flex cursor-pointer flex-col items-center text-center text-sm text-gray-500 dark:text-gray-400"
                           >
-                            <PlusCircle className="w-10 h-10 mb-2 text-gray-400 dark:text-gray-500" />
+                            <PlusCircle className="mb-2 h-10 w-10 text-gray-400 dark:text-gray-500" />
                             <span>Click to upload image</span>
                           </label>
                         </>
@@ -306,27 +283,21 @@ function SideBar() {
                     </div>
 
                     <div>
-                      <label
-                        htmlFor="caption"
-                        className="block text-sm font-medium mb-1"
-                      >
+                      <label htmlFor="caption" className="mb-1 block text-sm font-medium">
                         Caption
                       </label>
                       <textarea
                         id="caption"
                         value={caption}
                         onChange={(e) => setCaption(e.target.value)}
-                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-[#97bfb4]"
+                        className="w-full rounded-md border border-gray-300 bg-transparent p-2 focus:outline-none focus:ring-2 focus:ring-[#97bfb4] dark:border-gray-600"
                         placeholder="Write a caption..."
                         rows={3}
                       />
                     </div>
 
                     <div>
-                      <label
-                        htmlFor="location"
-                        className="block text-sm font-medium mb-1"
-                      >
+                      <label htmlFor="location" className="mb-1 block text-sm font-medium">
                         Location
                       </label>
                       <input
@@ -334,25 +305,23 @@ function SideBar() {
                         type="text"
                         value={location}
                         onChange={(e) => setLocation(e.target.value)}
-                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-[#97bfb4]"
+                        className="w-full rounded-md border border-gray-300 bg-transparent p-2 focus:outline-none focus:ring-2 focus:ring-[#97bfb4] dark:border-gray-600"
                         placeholder="e.g. Bangalore"
                       />
                     </div>
 
-                    <DialogFooter className="mt-3 flex items-center space-x-2 w-full">
+                    <DialogFooter className="mt-3 flex w-full items-center space-x-2">
                       <DialogClose asChild>
-                        <Button variant="outline" className="py-4 px-9">Cancel</Button>
+                        <Button variant="outline" className="px-9 py-4">
+                          Cancel
+                        </Button>
                       </DialogClose>
                       <Button
                         type="submit"
-                        className="py-5 w-20 bg-[#97bfb4] hover:bg-[#86aea3] text-white dark:text-black flex justify-center items-center"
+                        className="flex w-20 items-center justify-center bg-[#97bfb4] py-5 text-white hover:bg-[#86aea3] dark:text-black"
                         disabled={isFormSubmitting}
                       >
-                        {isFormSubmitting ? (
-                          <Loader2 className="w-6 h-6 animate-spin" />
-                        ) : (
-                          "Post"
-                        )}
+                        {isFormSubmitting ? <Loader2 className="h-6 w-6 animate-spin" /> : "Post"}
                       </Button>
                     </DialogFooter>
                   </form>
@@ -361,77 +330,61 @@ function SideBar() {
 
               <Link
                 href={`/profile/${session?.user?.username}`}
-                className="
-                  flex w-full items-center px-2 py-3 rounded-sm text-black dark:text-white 
-                  hover:bg-gray-100 dark:hover:bg-[#1f1f1f] 
-                  transition-all duration-200"
+                className={itemClass(profileActive)}
               >
-                <div className={`w-full flex items-center gap-2 ${isNotificationDrawerOpen ? "justify-center" : "justify-center lg:justify-start"}`}>
+                <div className={`flex w-full items-center gap-4 ${rowAlign}`}>
                   <Image
                     src={session?.user?.image || "/no-profile.jpg"}
                     alt="profile"
-                    width={32}
-                    height={32}
-                    className="rounded-full border border-gray-300 dark:border-gray-700 object-cover w-8 h-8"
+                    width={24}
+                    height={24}
+                    className={`h-6 w-6 shrink-0 rounded-full object-cover ${
+                      profileActive
+                        ? "ring-2 ring-black dark:ring-white"
+                        : "border border-zinc-300 dark:border-zinc-700"
+                    }`}
                   />
-                  <span className={`text-[16px] ml-3 font-bold ${isNotificationDrawerOpen ? "hidden" : "hidden lg:block"}`}>
-                    Profile
-                  </span>
+                  <span className={`text-[16px] ${labelClass}`}>Profile</span>
                 </div>
               </Link>
             </div>
           </div>
 
-          <div className="flex flex-col space-y-2 mb-3">
-            <Link
-              href="/settings"
-              className="
-                flex w-full items-center px-2 py-3 rounded-sm text-black dark:text-white 
-                hover:bg-gray-100 dark:hover:bg-[#1f1f1f] 
-                transition-all duration-200"
-            >
-              <div className={`w-full flex items-center gap-2 ${isNotificationDrawerOpen ? "justify-center" : "justify-center lg:justify-start"}`}>
-                <Settings className="w-6 h-6 block" />
-                <span className={`text-[16px] ml-3 font-bold ${isNotificationDrawerOpen ? "hidden" : "hidden lg:block"}`}>
-                  Settings
-                </span>
+          {/* BOTTOM */}
+          <div className="mb-3 flex flex-col space-y-1">
+            <Link href="/settings" className={itemClass(isActive("/settings"))}>
+              <div className={`flex w-full items-center gap-4 ${rowAlign}`}>
+                <Settings className={iconClass(isActive("/settings"))} />
+                <span className={`text-[16px] ${labelClass}`}>Settings</span>
               </div>
             </Link>
 
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <div
-                  className="
-                    flex w-full items-center px-2 py-3 rounded-sm 
-                    text-[#b94c4c] dark:text-[#ff7b7b]
-                    hover:bg-[#fdecec] dark:hover:bg-[#2b1f1f] 
-                    transition-all duration-200 cursor-pointer"
-                >
-                  <div className={`w-full flex items-center gap-2 ${isNotificationDrawerOpen ? "justify-center" : "justify-center lg:justify-start"}`}>
-                    <LogOut className="w-6 h-6 block" />
-                    <span className={`text-[16px] ml-3 font-bold ${isNotificationDrawerOpen ? "hidden" : "hidden lg:block"}`}>
-                      Logout
-                    </span>
+                <div className="flex w-full cursor-pointer items-center rounded-lg px-3 py-3 font-medium text-[#b94c4c] transition-colors duration-150 hover:bg-[#fdecec] dark:text-[#ff7b7b] dark:hover:bg-[#2b1f1f]">
+                  <div className={`flex w-full items-center gap-4 ${rowAlign}`}>
+                    <LogOut className="h-6 w-6 shrink-0" />
+                    <span className={`text-[16px] ${labelClass}`}>Logout</span>
                   </div>
                 </div>
               </AlertDialogTrigger>
-              <AlertDialogContent className="bg-white dark:bg-neutral-900 text-black dark:text-white border border-gray-300 dark:border-neutral-700 rounded-lg shadow-lg">
+              <AlertDialogContent className="rounded-lg border border-gray-300 bg-white text-black shadow-lg dark:border-neutral-700 dark:bg-neutral-900 dark:text-white">
                 <AlertDialogHeader>
                   <AlertDialogTitle className="text-lg font-semibold text-red-600">
                     Confirm Logout
                   </AlertDialogTitle>
                   <AlertDialogDescription className="text-sm text-gray-600 dark:text-gray-400">
-                    Are you sure you want to log out? You&apos;ll need to sign in again
-                    to access your account.
+                    Are you sure you want to log out? You&apos;ll need to sign in again to access
+                    your account.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel className="border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-md px-4 py-2 hover:bg-gray-100 dark:hover:bg-neutral-800">
+                  <AlertDialogCancel className="rounded-md border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-neutral-800">
                     Cancel
                   </AlertDialogCancel>
                   <AlertDialogAction
                     onClick={handleLogout}
-                    className="bg-[#bf4a4a] hover:bg-[#a13c3c] text-white rounded-md px-4 py-2 font-medium"
+                    className="rounded-md bg-[#bf4a4a] px-4 py-2 font-medium text-white hover:bg-[#a13c3c]"
                   >
                     Yes, Logout
                   </AlertDialogAction>
@@ -441,9 +394,8 @@ function SideBar() {
           </div>
         </div>
       </nav>
-      {
-        isNotificationDrawerOpen && <NotificationRightDrawer />
-      }
+
+      {isNotificationDrawerOpen && <NotificationRightDrawer />}
     </>
   );
 }

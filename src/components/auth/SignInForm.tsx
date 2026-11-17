@@ -1,6 +1,6 @@
 "use client";
 
-import { MailOpen, Github, Eye, EyeOff, Loader2 } from "lucide-react";
+import { MailOpen, Eye, EyeOff, Loader2 } from "lucide-react";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -8,6 +8,7 @@ import { FormEvent, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import AuthLayout, { inputClass, primaryButtonClass } from "./AuthLayout";
+import { GoogleIcon, GithubIcon } from "./SocialIcons";
 
 const PasswordInput = ({ name }: { name: string }) => {
   const [showPassword, setShowPassword] = useState(false);
@@ -34,11 +35,6 @@ const PasswordInput = ({ name }: { name: string }) => {
   );
 };
 
-const GoogleIcon = () => (
-  <svg viewBox="0 0 24 24" className="mr-2 h-4 w-4" aria-hidden="true">
-    <path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.3-1.6 3.8-5.5 3.8-3.3 0-6-2.7-6-6.1s2.7-6.1 6-6.1c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.8 3.3 14.6 2.4 12 2.4 6.7 2.4 2.4 6.7 2.4 12s4.3 9.6 9.6 9.6c5.5 0 9.2-3.9 9.2-9.4 0-.6-.1-1.1-.2-1.6H12z" />
-  </svg>
-);
 
 export function SignIn() {
   const [error, setError] = useState<string | null>(null);
@@ -69,19 +65,19 @@ export function SignIn() {
       toast.error(res.error);
     } else {
       toast.success("Logged in successfully.");
-      router.replace("/");
+      router.replace("/feed");
     }
     setIsLoadingCredentials(false);
   };
 
   const handleGoogleLogin = async () => {
     setIsLoadingGoogle(true);
-    await signIn("google", { callbackUrl: "/" });
+    await signIn("google", { callbackUrl: "/feed" });
   };
 
   const handleGithubLogin = async () => {
     setIsLoadingGithub(true);
-    await signIn("github", { callbackUrl: "/" });
+    await signIn("github", { callbackUrl: "/feed" });
   };
   // --- END LOGIC ---
 
@@ -97,24 +93,25 @@ export function SignIn() {
       </div>
 
       {/* Social first, like most modern apps */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="flex flex-col gap-3">
         <Button
           onClick={handleGoogleLogin}
           variant="outline"
-          className="h-11 rounded-xl border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800"
+          className="h-12 w-full justify-center gap-3 rounded-xl border-zinc-200 bg-white text-[15px] font-medium text-zinc-900 transition-colors hover:border-zinc-300 hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:hover:border-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-white"
           disabled={anyLoading}
         >
-          {isLoadingGoogle ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon />}
-          Google
+          {isLoadingGoogle ? <Loader2 className="h-5 w-5 animate-spin" /> : <GoogleIcon />}
+          Continue with Google
         </Button>
+
         <Button
           onClick={handleGithubLogin}
           variant="outline"
-          className="h-11 rounded-xl border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800"
+          className="h-12 w-full justify-center gap-3 rounded-xl border-zinc-200 bg-white text-[15px] font-medium text-zinc-900 transition-colors hover:border-zinc-300 hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:hover:border-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-white"
           disabled={anyLoading}
         >
-          {isLoadingGithub ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Github className="mr-2 h-4 w-4" />}
-          GitHub
+          {isLoadingGithub ? <Loader2 className="h-5 w-5 animate-spin" /> : <GithubIcon />}
+          Continue with GitHub
         </Button>
       </div>
 

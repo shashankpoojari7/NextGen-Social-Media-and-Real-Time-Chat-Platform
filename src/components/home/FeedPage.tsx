@@ -13,7 +13,7 @@ import {
 
 import { useFeed } from "@/hooks/useFeed";
 
-function HomePage() {
+function FeedPage() {
   const {data, isLoading, isError, error, fetchNextPage, hasNextPage, isFetchingNextPage} = useFeed();
 
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
@@ -110,4 +110,4 @@ function HomePage() {
   );
 }
 
-export default HomePage;
+export default FeedPage;

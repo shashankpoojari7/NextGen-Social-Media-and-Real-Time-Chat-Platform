@@ -6,13 +6,12 @@ import {
   Radio,
   Send,
   Sparkles,
-  Zap,
 } from "lucide-react";
 import { ReactNode } from "react";
 import Image from "next/image";
 
-const HERO_IMAGE = "hero.png";
-const POST_IMAGE = "post.png";
+const HERO_IMAGE = "/images/auth/hero.png";
+const POST_IMAGE = "/images/auth/post.png";
 
 export const inputClass =
   "h-12 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 text-zinc-900 placeholder:text-zinc-400 outline-none transition-all focus:border-violet-500 focus:ring-2 focus:ring-violet-500/30 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500";
@@ -43,7 +42,6 @@ function Logo({ light = false }: { light?: boolean }) {
 function Showcase({ variant }: { variant: "signin" | "signup" }) {
   return (
     <aside className="relative hidden flex-col justify-between overflow-hidden bg-zinc-950 p-12 text-white lg:sticky lg:top-0 lg:flex lg:h-screen">
-      {/* background image + colour wash */}
       <div
         className="absolute inset-0 bg-cover bg-center opacity-40"
         style={{ backgroundImage: `url(${HERO_IMAGE})` }}
@@ -78,7 +76,6 @@ function Showcase({ variant }: { variant: "signin" | "signup" }) {
           </div>
         </div>
 
-        {/* chat card */}
         <div className="absolute right-0 top-24 w-60 rotate-3 rounded-2xl border border-white/15 bg-white/10 p-3 shadow-2xl backdrop-blur-xl">
           <div className="mb-3 flex items-center gap-2">
             <div className="relative">
@@ -107,7 +104,6 @@ function Showcase({ variant }: { variant: "signin" | "signup" }) {
           </div>
         </div>
 
-        {/* notification pill */}
         <div className="absolute bottom-6 left-10 flex items-center gap-3 rounded-full border border-white/15 bg-white/10 py-2 pl-2 pr-5 shadow-2xl backdrop-blur-xl">
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-linear-to-br from-pink-500 to-orange-400">
             <Bell className="h-4 w-4" />
@@ -118,7 +114,6 @@ function Showcase({ variant }: { variant: "signin" | "signup" }) {
         </div>
       </div>
 
-      {/* bottom: headline + feature chips */}
       <div className="relative z-10 space-y-5">
         <h2 className="text-4xl font-bold leading-tight tracking-tight">
           {variant === "signin" ? (
@@ -160,20 +155,15 @@ function Showcase({ variant }: { variant: "signin" | "signup" }) {
   );
 }
 
-export default function AuthLayout({
-  variant,
-  children,
-}: {
+export default function AuthLayout({ variant, children }: {
   variant: "signin" | "signup";
   children: ReactNode;
 }) {
   return (
     <div className="grid min-h-screen bg-white dark:bg-zinc-950 lg:grid-cols-2">
       <Showcase variant={variant} />
-
-      <main className="flex items-center justify-center px-6 py-10 sm:px-10">
+      <main className="flex items-center justify-center px-6 py-10 sm:px-10 lg:border-l lg:border-zinc-200 dark:lg:border-zinc-800">
         <div className="w-full max-w-md">
-          {/* logo only on mobile, since the panel is hidden */}
           <div className="mb-8 lg:hidden">
             <Logo />
           </div>
